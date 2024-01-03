@@ -16,6 +16,8 @@ const int P1BUTTONPIN = A0;
 const int P2BUTTONPIN = A1;
 const int P1MOTIONPIN = D10;
 const int P2MOTIONPIN = D7;
+const int READYLEDPINS[] = {D6, D5, D4, D3};
+const int PLAYERLEDS [] = {D19, D18};
 const int OLED_RESET = -1;
 const int PIXELCOUNT = 2;
 const int WAITING = 0;
@@ -38,10 +40,13 @@ Button p2Motion(P2MOTIONPIN);
 int currentMillis;
 int previousMillis;
 int gameMode;
+int p1Score = 0;
+int p2Score = 0;
 
 void waitingForPlayers();
 void gameOn();
 void noWin();
+void turnOnOffReadyLEDs(bool onOff);
 
 void setup() {
     Serial.begin(9600);
@@ -68,6 +73,17 @@ void setup() {
     display.display();
     
     gameMode = WAITING;
+
+    for (int i=0; i < 4; i++){
+        pinMode(READYLEDPINS[i], OUTPUT);
+        digitalWrite(READYLEDPINS[i], LOW);
+    }
+
+    pinMode(PLAYERLEDS[0], OUTPUT);
+    pinMode(PLAYERLEDS[1], OUTPUT);
+    digitalWrite(PLAYERLEDS[0], LOW);
+    digitalWrite(PLAYERLEDS[1], LOW);
+
     
 }
 
@@ -122,6 +138,9 @@ void gameOn(){
     pixel.setPixelColor(0,0,255,0);
     pixel.setPixelColor(1, 0, 255, 0);
 
+    digitalWrite(PLAYERLEDS[0], HIGH);
+    digitalWrite(PLAYERLEDS[1], HIGH);
+
     if (p1Motion.isClicked()){
         // gameMode = NOWINNER;
         Serial.printf("LOSER\n");
@@ -161,6 +180,9 @@ void gameOn(){
 }
 
 void waitingForPlayers(){
+    turnOnOffReadyLEDs(true);
+    digitalWrite(PLAYERLEDS[0], LOW);
+    digitalWrite(PLAYERLEDS[1], LOW);
     display.clearDisplay();
     display.setCursor(0,0);
     display.printf("Place both hands on the white buttons");
@@ -173,6 +195,7 @@ void waitingForPlayers(){
     if (readyButtons.isPressed()){
         pixel.clear();
         pixel.show();
+        turnOnOffReadyLEDs(false);
 
         display.clearDisplay();
         display.setCursor(0,0);
@@ -188,4 +211,10 @@ void waitingForPlayers(){
         gameMode = PLAYING;
     }
     pixel.show();
+}
+
+void turnOnOffReadyLEDs(bool onOff){
+    for (int i=0; i < 4; i++){
+        digitalWrite(READYLEDPINS[i], onOff);
+    }
 }
