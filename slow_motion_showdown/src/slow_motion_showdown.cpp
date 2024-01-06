@@ -28,8 +28,11 @@ const int PLAYING = 1;
 const int NOWINNER = 2;
 const int WINNER = 3;
 
-// SYSTEM_MODE(SEMI_AUTOMATIC);
-SYSTEM_MODE(MANUAL);
+//set to false and disable manual SYSTEM_MODE if no wifi
+const bool isWifiOn = false;
+// SYSTEM_MODE(MANUAL);
+SYSTEM_MODE(SEMI_AUTOMATIC);    
+
 SYSTEM_THREAD(ENABLED);
 
 Adafruit_SSD1306 p1OLED(OLED_RESET);
@@ -48,6 +51,7 @@ int gameMode;
 int p1Score = 0;
 int p2Score = 0;
 
+
 void waitingForPlayers();
 void gameOn();
 void noWin();
@@ -58,16 +62,17 @@ void setup() {
     Serial.begin(9600);
     waitFor(Serial.isConnected, 10000);
 
-    //comment out below if turnin off wifi
-    WiFi.on();
-    WiFi.clearCredentials();
-    WiFi.setCredentials("IoTNetwork");
-    WiFi.connect();
-    while (WiFi.connecting())
-    {
-        Serial.printf(".");
+    if (isWifiOn){
+        WiFi.on();
+        WiFi.clearCredentials();
+        WiFi.setCredentials("IoTNetwork");
+        WiFi.connect();
+        while (WiFi.connecting())
+        {
+            Serial.printf("."); 
+        }
+        Serial.printf("\n\n");
     }
-    Serial.printf("\n\n");
 
     p1OLED.begin(SSD1306_SWITCHCAPVCC, 0x3D);
     p1OLED.clearDisplay();
@@ -286,29 +291,32 @@ void waitingForPlayers(){
         p1OLED.clearDisplay();
         p1OLED.setCursor(0,0);
         p1OLED.printf("Get ready\nto start\nin...");
-        // p1OLED.printf("start in...");
         p1OLED.display();
         p2OLED.display();
 
         delay(2000);
         p1OLED.clearDisplay();
-        p1OLED.setTextSize(5);
+        p1OLED.setCursor(40,0);
+        p1OLED.setTextSize(9);
         p1OLED.printf("3");
         p1OLED.display();
+        p2OLED.display();
 
         delay(1000);
 
         p1OLED.clearDisplay();
-        p1OLED.setTextSize(5);
+        p1OLED.setCursor(40,0);
         p1OLED.printf("2");
         p1OLED.display();
+        p2OLED.display();
 
         delay(1000);
 
         p1OLED.clearDisplay();
-        p1OLED.setTextSize(5);
+        p1OLED.setCursor(40,0);
         p1OLED.printf("1");
         p1OLED.display();
+        p2OLED.display();
 
         delay(1000);
 
