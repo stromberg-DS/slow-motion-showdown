@@ -72,29 +72,36 @@ void setup() {
     p1OLED.begin(SSD1306_SWITCHCAPVCC, 0x3D);
     p1OLED.clearDisplay();
     p1OLED.setTextColor(WHITE);
-    p2OLED.display();
+    p1OLED.setTextSize(2);
+    p1OLED.display();
 
     p2OLED.begin(SSD1306_SWITCHCAPVCC, 0x3C);
     p2OLED.clearDisplay();
     p2OLED.setTextColor(WHITE);
+    p2OLED.setTextSize(2);
     p2OLED.display();
 
-
-
-    p1OLED.setCursor(40, 5);
+    p1OLED.setCursor(0, 10);
+    p1OLED.printf("Slow\nMotion\nShowdown");
+    p1OLED.display();
+    p2OLED.display();       //This just displays the same as p1OLED. Using this to my advantage.
+    delay(3000);
+    
+    p1OLED.clearDisplay();
+    p1OLED.setCursor(10, 5);
     p1OLED.setTextSize(3);
-    p1OLED.printf("p1\n");
-    p1OLED.setCursor(30, 35);
-    p1OLED.printf("Gold");
+    p1OLED.printf("Player");
+    p1OLED.setCursor(10, 35);
+    p1OLED.printf("1-Gold");
     p1OLED.display();
     p1OLED.setTextSize(2);
 
     p2OLED.clearDisplay();
-    p2OLED.setCursor(40, 5);
+    p2OLED.setCursor(10, 5);
     p2OLED.setTextSize(3);
-    p2OLED.printf("p2\n");
-    p2OLED.setCursor(30, 35);
-    p2OLED.printf("Blue");
+    p2OLED.printf("Player");
+    p2OLED.setCursor(10, 35);
+    p2OLED.printf("2-Blue");
     p2OLED.display();
     p2OLED.setTextSize(2);
 
@@ -103,7 +110,7 @@ void setup() {
     pixel.setPixelColor(0, 0,255,0);
     pixel.setPixelColor(1, 0,255,0);
     pixel.show();
-    delay(10000);
+    delay(3000);
     pixel.clear();
     pixel.show();
 
@@ -214,6 +221,7 @@ void gameOn(){
         p1OLED.setTextSize(4);
         p1OLED.printf("BLUE\nWINS!");
         p1OLED.display();
+        p2OLED.display();
         p1OLED.setTextSize(2);
         delay(1000);
 
@@ -236,6 +244,7 @@ void gameOn(){
         p1OLED.setTextSize(4);
         p1OLED.printf("GOLD\nWINS!");
         p1OLED.display();
+        p2OLED.display();
         p1OLED.setTextSize(2);
         delay(1000);
 
@@ -260,8 +269,10 @@ void waitingForPlayers(){
     digitalWrite(PLAYERLEDS[1], LOW);
     p1OLED.clearDisplay();
     p1OLED.setCursor(0,0);
-    p1OLED.printf("Place both hands on the white buttons");
+    p1OLED.printf("Place both");
+    p1OLED.printf("hands on\nthe white\nbuttons");
     p1OLED.display();
+    p2OLED.display();
 
     pixel.setPixelColor(0,255,0,0);
     pixel.setPixelColor(1, 255, 0, 0);
@@ -274,10 +285,34 @@ void waitingForPlayers(){
 
         p1OLED.clearDisplay();
         p1OLED.setCursor(0,0);
-        p1OLED.printf("Get ready to start in 3... 2... 1...");
+        p1OLED.printf("Get ready\nto start\nin...");
+        // p1OLED.printf("start in...");
+        p1OLED.display();
+        p2OLED.display();
+
+        delay(2000);
+        p1OLED.clearDisplay();
+        p1OLED.setTextSize(5);
+        p1OLED.printf("3");
         p1OLED.display();
 
         delay(1000);
+
+        p1OLED.clearDisplay();
+        p1OLED.setTextSize(5);
+        p1OLED.printf("2");
+        p1OLED.display();
+
+        delay(1000);
+
+        p1OLED.clearDisplay();
+        p1OLED.setTextSize(5);
+        p1OLED.printf("1");
+        p1OLED.display();
+
+        delay(1000);
+
+
         pixel.setPixelColor(0, 0, 255, 0);
         pixel.setPixelColor(1, 0, 255, 0);
         pixel.show();
@@ -285,6 +320,8 @@ void waitingForPlayers(){
         wemoWrite(MYWEMO[0], HIGH);
         p1OLED.clearDisplay();
         p1OLED.display();
+        p2OLED.clearDisplay();
+        p2OLED.display();
         gameMode = PLAYING;
     }
     pixel.show();
@@ -302,4 +339,5 @@ void showScore(){
     p1OLED.setCursor(0,0);
     p1OLED.printf("Player 1: %i\nPlayer 2: %i", p1Score, p2Score);
     p1OLED.display();
+    p2OLED.display();
 }
