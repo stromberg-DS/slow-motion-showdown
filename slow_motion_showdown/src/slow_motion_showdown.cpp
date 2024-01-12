@@ -32,8 +32,10 @@ const int WINNER = 3;
 const int COUNTINGDOWN = 4;
 const int ENCODERMAX = 80;
 
-//set to false and disable manual SYSTEM_MODE if no wifi
-const bool isWifiOn = true;
+//CHANGE BELOW CONSTANTS DEPENDING ON Setup
+const int numBulbsToUse = 1;    //1-6 bulbs
+const int numOutletsToUse = 1;  //1-5 outlets
+const bool isWifiOn = true;     //set to false and disable manual SYSTEM_MODE if no wifi
 SYSTEM_MODE(MANUAL);
 // SYSTEM_MODE(SEMI_AUTOMATIC);    
 
@@ -66,6 +68,7 @@ int position;
 int hueManualColor = 0;
 int hueManualBrightness = 100;
 bool isSettingColor = true;
+bool isFirstManualRun = true;
 int lastHueUpdate;
 
 
@@ -76,6 +79,8 @@ void turnOnOffReadyLEDs(bool onOff);
 void showScore();
 void countDown();
 void gameStartup();
+void lightUpBulbs(bool _onOff, int _color, int _brightness);
+void turnOnOffWemoSwitches(bool _onOff);
 
 void setup() {
     Serial.begin(9600);
@@ -107,7 +112,7 @@ void setup() {
     p2OLED.setTextSize(2);
     p2OLED.display();
 
-    gameStartup();
+    // gameStartup();
 
     position = myEnc.read();
 
@@ -127,10 +132,12 @@ void setup() {
 
 void loop() {
     currentMillis = millis();
+    static String hueOrBrightness = "hue";
 
     if(autoModeSwitch.isClicked()){         //switch high is game mode
         Serial.printf("switch flipped");
         gameStartup();
+        isFirstManualRun = true;
     }
 
     if (autoModeSwitch.isPressed()){        //AUTO MODE (PLAYING GAME)
@@ -150,8 +157,24 @@ void loop() {
     } else {                                //MANUAL CONTROL MODE
         position = myEnc.read();
 
+        if(isFirstManualRun){
+            p1OLED.clearDisplay();
+            p1OLED.setCursor(0,0);
+            p1OLED.setTextSize(2);
+            // p1OLED.printf("Set hue &\n");
+            // p1OLED.printf("intensity\nwith\nencoder.");
+            p1OLED.printf("Now adjusting\n");
+            p1OLED.printf("%s", hueOrBrightness.c_str());
+            Serial.printf("Now adjusting: %s\n", hueOrBrightness.c_str());
+            p1OLED.display();
+            p2OLED.display();
+
+            isFirstManualRun = false;
+        }
+
         if(encoderButton.isClicked()){      
             isSettingColor = !isSettingColor;
+            isFirstManualRun = true;
         }
 
         if (position > ENCODERMAX)    {    //Cap the encoder position at the encoder max
@@ -165,12 +188,15 @@ void loop() {
 
         if(isSettingColor){
             hueManualColor = map(position, 0, ENCODERMAX, 0, 50000);
+            hueOrBrightness = "hue";
         } else {
             hueManualBrightness = map(position, 0, ENCODERMAX, 0, 255);
+            hueOrBrightness = "intensity";
         }
 
         if((currentMillis - lastHueUpdate) > 500){
-            setHue(BULBS[0], true, hueManualColor, hueManualBrightness, 255);
+            // setHue(BULBS[0], true, hueManualColor, hueManualBrightness, 255);
+            lightUpBulbs(true, hueManualColor, hueManualBrightness);
             lastHueUpdate = currentMillis;
         }
 
@@ -195,7 +221,8 @@ void noWin(){
         }
 
     } else{
-        setHue(BULBS[0], false, 0, 0, 0);        //turn off bulb
+        lightUpBulbs(false, 0, 0);
+        // setHue(BULBS[0], false, 0, 0, 0);        //turn off bulb
         gameMode = WAITING;
     }
 }
@@ -213,8 +240,10 @@ void gameOn(){
     if (p1Motion.isClicked()){          
         Serial.printf("P1 LOSER\n");
         p2Score++;
-        wemoWrite(MYWEMO[0], LOW);
-        setHue(BULBS[0], true, HueRed, 255, 255);     //set bulb red
+        turnOnOffWemoSwitches(false);
+        // wemoWrite(MYWEMO[0], LOW);
+        lightUpBulbs(true, HueRed, 255);
+        // setHue(BULBS[0], true, HueRed, 255, 255);     //set bulb red
         noWinTimer = currentMillis;
         gameMode = NOWINNER;
     }
@@ -222,8 +251,10 @@ void gameOn(){
     if (p2Motion.isClicked()){
         Serial.printf("P2 LOSER");
         p1Score++;
-        wemoWrite(MYWEMO[0], LOW);
-        setHue(BULBS[0], true, HueRed, 255, 255);     //set bulb red
+        turnOnOffWemoSwitches(false);
+        // wemoWrite(MYWEMO[0], LOW);
+        lightUpBulbs(true, HueRed, 255);
+        // setHue(BULBS[0], true, HueRed, 255, 255);     //set bulb red
         noWinTimer = currentMillis;
         gameMode = NOWINNER;
     }
@@ -245,11 +276,14 @@ void gameOn(){
         pixel.setPixelColor(1,0,0,255);
         pixel.show();
         showScore();
-        wemoWrite(MYWEMO[0], LOW);
-        setHue(BULBS[0], true, HueBlue, 150, 255);        //turn bulb blue
+        turnOnOffWemoSwitches(false);
+        // wemoWrite(MYWEMO[0], LOW);
+        lightUpBulbs(true, HueBlue, 150);
+        // setHue(BULBS[0], true, HueBlue, 150, 255);        //turn bulb blue
         delay(2000);
         gameMode = WAITING;
-        setHue(BULBS[0], false, HueGreen, 150, 255);        //turn bulb off
+        lightUpBulbs(false, HueGreen, 150);
+        // setHue(BULBS[0], false, HueGreen, 150, 255);        //turn bulb off
         
     }
     else if (player2Button.isClicked()) {
@@ -268,11 +302,14 @@ void gameOn(){
         pixel.setPixelColor(1,255,255,0);
         pixel.show();
         showScore();
-        wemoWrite(MYWEMO[0], LOW);
-        setHue(BULBS[0], true, HueYellow, 150, 255);        //turn bulb yellow
+        turnOnOffWemoSwitches(false);
+        // wemoWrite(MYWEMO[0], LOW);
+        lightUpBulbs(true, HueYellow, 15);
+        // setHue(BULBS[0], true, HueYellow, 150, 255);        //turn bulb yellow
         delay(2000);
         gameMode = WAITING;
-        setHue(BULBS[0], false, HueGreen, 150, 255);        //turn bulb off
+        lightUpBulbs(false, HueGreen, 150);
+        // setHue(BULBS[0], false, HueGreen, 150, 255);        //turn bulb off
     }
 
 }
@@ -335,10 +372,13 @@ void countDown(){
         pixel.setPixelColor(0, 0, 255, 0);
         pixel.setPixelColor(1, 0, 255, 0);
         pixel.show();
-        setHue(BULBS[0], false, 0x00FF00, 150, 255);        //turn bulb green
-        wemoWrite(MYWEMO[0], HIGH);
+        // lightUpBulbs(false, HueGreen, 150);
+        turnOnOffWemoSwitches(true);
+        // wemoWrite(MYWEMO[0], HIGH);
+        p1OLED.setTextSize(2);
         p1OLED.clearDisplay();
         p1OLED.display();
+        p2OLED.setTextSize(2);
         p2OLED.clearDisplay();
         p2OLED.display();
         gameMode = PLAYING;
@@ -354,6 +394,7 @@ void turnOnOffReadyLEDs(bool onOff){
 
 void showScore(){
     p1OLED.setTextSize(2);
+    p2OLED.setTextSize(2);
     p1OLED.clearDisplay();
     p1OLED.setCursor(0,0);
     p1OLED.printf("Player 1: %i\nPlayer 2: %i", p1Score, p2Score);
@@ -411,7 +452,20 @@ void gameStartup(){
     p2OLED.clearDisplay();
     p2OLED.display();
 
-    setHue(BULBS[0], false, HueGreen, 150, 255);   
+    lightUpBulbs(false, HueGreen, 150);
+    // setHue(BULBS[0], false, HueGreen, 150, 255);   
 
     gameMode = WAITING;
+}
+
+void lightUpBulbs(bool _onOff, int _color, int _brightness){
+    for(int i=0; i< numBulbsToUse; i++){
+        setHue(BULBS[i], _onOff, _color, _brightness, 255);
+    }
+}
+
+void turnOnOffWemoSwitches(bool _onOff){
+    for(int i=0; i < numOutletsToUse; i++){
+        wemoWrite(MYWEMO[i], _onOff);
+    }
 }
