@@ -12,14 +12,16 @@
 #include <neopixel.h>
 
 
-const int BULBS[] = {5, 3, 1, 2, 4, 6};
-const int MYWEMO[] = {4, 5, 3, 2, 1};     //outlet number
-const int READYBUTTONSPIN = A2;
+const int BULBS[] = {5, 3, 1, 2, 4, 6};     //bulb numbers - [0] is my testing bulb
+const int MYWEMO[] = {4, 5, 3, 2, 1};     //outlet numbers - [0] is my testing outlet
+const int READYBUTTONPINP1 = A2;
+const int READYBUTTONPINP2 = A5;
 const int P1BUTTONPIN = A0;
 const int P2BUTTONPIN = A1;
 const int P1MOTIONPIN = D10;
 const int P2MOTIONPIN = D3;
-const int READYLEDPINS[] = {D7, D6, D5, D4};
+const int AUTOMODEPIN = D17;                //Labeled S2, SCK on the Photon2
+const int READYLEDPINS[] = {D7, D6};
 const int PLAYERLEDS [] = {D19, D18};
 const int OLED_RESET = -1;
 const int PIXELCOUNT = 2;
@@ -39,11 +41,13 @@ SYSTEM_THREAD(ENABLED);
 Adafruit_SSD1306 p1OLED(OLED_RESET);
 Adafruit_SSD1306 p2OLED(OLED_RESET);
 Adafruit_NeoPixel pixel(PIXELCOUNT, SPI1, WS2812B);
-Button readyButtons(READYBUTTONSPIN);
+Button readyButtonP1(READYBUTTONPINP1);
+Button readyButtonP2(READYBUTTONPINP2);
 Button player1Button(P1BUTTONPIN);
 Button player2Button(P2BUTTONPIN);
 Button p1Motion(P1MOTIONPIN);
 Button p2Motion(P2MOTIONPIN);
+Button autoModeSwitch(AUTOMODEPIN);
 
 
 int currentMillis;
@@ -136,7 +140,7 @@ void setup() {
     
     gameMode = WAITING;
 
-    for (int i=0; i < 4; i++){
+    for (int i=0; i < 2; i++){
         pinMode(READYLEDPINS[i], OUTPUT);
         digitalWrite(READYLEDPINS[i], LOW);
     }
@@ -152,18 +156,23 @@ void setup() {
 void loop() {
     currentMillis = millis();
 
-    switch (gameMode){
-        case WAITING:
-            waitingForPlayers();
-            break;
-        case PLAYING:
-            gameOn();
-            break;
-        case NOWINNER:
-            noWin();
-            break;
-        case COUNTINGDOWN:
-            countDown();
+    if (autoModeSwitch.isPressed()){
+        switch (gameMode){
+            case WAITING:
+                waitingForPlayers();
+                break;
+            case PLAYING:
+                gameOn();
+                break;
+            case NOWINNER:
+                noWin();
+                break;
+            case COUNTINGDOWN:
+                countDown();
+        }
+    } else {
+        pixel.setPixelColor(0,0,255, 255);
+        pixel.setPixelColor(1,0,255, 255);
     }
 
     pixel.show();
@@ -280,16 +289,13 @@ void waitingForPlayers(){
     pixel.setPixelColor(1, 255, 0, 0);
     
 
-    if (readyButtons.isPressed()){
+    if (readyButtonP1.isPressed() && readyButtonP2.isPressed()){
         pixel.clear();
         pixel.show();
         turnOnOffReadyLEDs(false);
 
         countdownStart = currentMillis;
-        gameMode = COUNTINGDOWN;
-        
-
-        
+        gameMode = COUNTINGDOWN;        
     }
     pixel.show();
 }
@@ -338,7 +344,7 @@ void countDown(){
 }
 
 void turnOnOffReadyLEDs(bool onOff){
-    for (int i=0; i < 4; i++){
+    for (int i=0; i < 2; i++){
         digitalWrite(READYLEDPINS[i], onOff);
     }
 }
