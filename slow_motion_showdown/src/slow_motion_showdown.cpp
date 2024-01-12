@@ -27,6 +27,7 @@ const int WAITING = 0;
 const int PLAYING = 1;
 const int NOWINNER = 2;
 const int WINNER = 3;
+const int COUNTINGDOWN = 4;
 
 //set to false and disable manual SYSTEM_MODE if no wifi
 const bool isWifiOn = false;
@@ -50,6 +51,8 @@ int previousMillis;
 int gameMode;
 int p1Score = 0;
 int p2Score = 0;
+int noWinTimer = 0;
+int countdownStart = 0;
 
 
 void waitingForPlayers();
@@ -57,11 +60,14 @@ void gameOn();
 void noWin();
 void turnOnOffReadyLEDs(bool onOff);
 void showScore();
+void countDown();
 
 void setup() {
     Serial.begin(9600);
     waitFor(Serial.isConnected, 10000);
 
+
+    //Setup Wifi only if we need it.
     if (isWifiOn){
         WiFi.on();
         WiFi.clearCredentials();
@@ -125,7 +131,7 @@ void setup() {
     p2OLED.clearDisplay();
     p2OLED.display();
 
-    setHue(BULBS[0], false, HueGreen, 150, 255);        //turn bulb yellow
+    setHue(BULBS[0], false, HueGreen, 150, 255);   
 
     
     gameMode = WAITING;
@@ -156,41 +162,30 @@ void loop() {
         case NOWINNER:
             noWin();
             break;
+        case COUNTINGDOWN:
+            countDown();
     }
 
     pixel.show();
 
 }
 
-void noWin(){
-    // p1OLED.clearDisplay();
-    // p1OLED.setCursor(5,15);
-    // p1OLED.setTextSize(4);
-    // p1OLED.printf("Loser");
-    // p1OLED.display();
-    // p1OLED.setTextSize(2);
+void noWin(){   
+    if((currentMillis - noWinTimer) < 4000){
+        showScore();
+        if((currentMillis - noWinTimer) % 500 < 250){   //pulse red lights every 250ms
+            pixel.setPixelColor(0,255,0, 0);
+            pixel.setPixelColor(1,255,0, 0);
+            pixel.show();
+        } else{
+            pixel.clear();
+            pixel.show();
+        }
 
-    pixel.setPixelColor(0,255,0, 0);
-    pixel.setPixelColor(1,255,0, 0);
-    pixel.show();
-    setHue(BULBS[0], true, HueRed, 255, 255);     //set bulb red
-
-    delay(500);
-
-    pixel.clear();
-    pixel.show();
-    delay(500);
-
-    pixel.setPixelColor(0,255,0, 0);
-    pixel.setPixelColor(1,255,0, 0);
-    pixel.show();
-    delay(500);
-
-    pixel.clear();
-    pixel.show();
-    delay(500);
-    setHue(BULBS[0], false, 0, 0, 0);        //turn off bulb
-    gameMode = WAITING;
+    } else{
+        setHue(BULBS[0], false, 0, 0, 0);        //turn off bulb
+        gameMode = WAITING;
+    }
 }
 
 void gameOn(){
@@ -206,17 +201,19 @@ void gameOn(){
     if (p1Motion.isClicked()){          
         Serial.printf("P1 LOSER\n");
         p2Score++;
-        showScore();
         wemoWrite(MYWEMO[0], LOW);
-        noWin();
+        setHue(BULBS[0], true, HueRed, 255, 255);     //set bulb red
+        noWinTimer = currentMillis;
+        gameMode = NOWINNER;
     }
 
     if (p2Motion.isClicked()){
         Serial.printf("P2 LOSER");
         p1Score++;
-        showScore();
         wemoWrite(MYWEMO[0], LOW);
-        noWin();
+        setHue(BULBS[0], true, HueRed, 255, 255);     //set bulb red
+        noWinTimer = currentMillis;
+        gameMode = NOWINNER;
     }
 
     //Meanwhile, wait for each player to press their own button
@@ -288,39 +285,44 @@ void waitingForPlayers(){
         pixel.show();
         turnOnOffReadyLEDs(false);
 
-        p1OLED.clearDisplay();
-        p1OLED.setCursor(0,0);
-        p1OLED.printf("Get ready\nto start\nin...");
-        p1OLED.display();
-        p2OLED.display();
+        countdownStart = currentMillis;
+        gameMode = COUNTINGDOWN;
+        
 
-        delay(2000);
-        p1OLED.clearDisplay();
-        p1OLED.setCursor(40,0);
-        p1OLED.setTextSize(9);
-        p1OLED.printf("3");
-        p1OLED.display();
-        p2OLED.display();
+        
+    }
+    pixel.show();
+}
 
-        delay(1000);
-
-        p1OLED.clearDisplay();
-        p1OLED.setCursor(40,0);
-        p1OLED.printf("2");
-        p1OLED.display();
-        p2OLED.display();
-
-        delay(1000);
-
-        p1OLED.clearDisplay();
-        p1OLED.setCursor(40,0);
-        p1OLED.printf("1");
-        p1OLED.display();
-        p2OLED.display();
-
-        delay(1000);
-
-
+void countDown(){
+    if((currentMillis - countdownStart) < 5000){
+        if((currentMillis - countdownStart) < 2000){
+            p1OLED.clearDisplay();
+            p1OLED.setCursor(0,0);
+            p1OLED.printf("Get ready\nto start\nin...");
+            p1OLED.display();
+            p2OLED.display();
+        } else if((currentMillis - countdownStart) < 3000){
+            p1OLED.clearDisplay();
+            p1OLED.setCursor(40,0);
+            p1OLED.setTextSize(9);
+            p1OLED.printf("3");
+            p1OLED.display();
+            p2OLED.display();
+        } else if((currentMillis - countdownStart) < 4000){
+            p1OLED.clearDisplay();
+            p1OLED.setCursor(40,0);
+            p1OLED.printf("2");
+            p1OLED.display();
+            p2OLED.display();
+        } else{
+            p1OLED.clearDisplay();
+            p1OLED.setCursor(40,0);
+            p1OLED.printf("1");
+            p1OLED.display();
+            p2OLED.display();
+        }
+    } else {
         pixel.setPixelColor(0, 0, 255, 0);
         pixel.setPixelColor(1, 0, 255, 0);
         pixel.show();
@@ -332,7 +334,7 @@ void waitingForPlayers(){
         p2OLED.display();
         gameMode = PLAYING;
     }
-    pixel.show();
+
 }
 
 void turnOnOffReadyLEDs(bool onOff){
