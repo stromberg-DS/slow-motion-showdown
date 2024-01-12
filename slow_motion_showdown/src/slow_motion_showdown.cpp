@@ -30,11 +30,12 @@ const int PLAYING = 1;
 const int NOWINNER = 2;
 const int WINNER = 3;
 const int COUNTINGDOWN = 4;
+const int ENCODERMAX = 80;
 
 //set to false and disable manual SYSTEM_MODE if no wifi
-const bool isWifiOn = false;
-// SYSTEM_MODE(MANUAL);
-SYSTEM_MODE(SEMI_AUTOMATIC);    
+const bool isWifiOn = true;
+SYSTEM_MODE(MANUAL);
+// SYSTEM_MODE(SEMI_AUTOMATIC);    
 
 SYSTEM_THREAD(ENABLED);
 
@@ -48,6 +49,8 @@ Button player2Button(P2BUTTONPIN);
 Button p1Motion(P1MOTIONPIN);
 Button p2Motion(P2MOTIONPIN);
 Button autoModeSwitch(AUTOMODEPIN);
+Encoder myEnc(D4, D5);
+Button encoderButton(D15);          //also labeled MO, S0
 
 
 int currentMillis;
@@ -58,6 +61,13 @@ int p2Score = 0;
 int noWinTimer = 0;
 int countdownStart = 0;
 
+//Maual Mode variables
+int position;
+int hueManualColor = 0;
+int hueManualBrightness = 100;
+bool isSettingColor = true;
+int lastHueUpdate;
+
 
 void waitingForPlayers();
 void gameOn();
@@ -65,6 +75,7 @@ void noWin();
 void turnOnOffReadyLEDs(bool onOff);
 void showScore();
 void countDown();
+void gameStartup();
 
 void setup() {
     Serial.begin(9600);
@@ -96,49 +107,10 @@ void setup() {
     p2OLED.setTextSize(2);
     p2OLED.display();
 
-    p1OLED.setCursor(0, 10);
-    p1OLED.printf("Slow\nMotion\nShowdown");
-    p1OLED.display();
-    p2OLED.display();       //This just displays the same as p1OLED. Using this to my advantage.
-    delay(3000);
-    
-    p1OLED.clearDisplay();
-    p1OLED.setCursor(10, 5);
-    p1OLED.setTextSize(3);
-    p1OLED.printf("Player");
-    p1OLED.setCursor(10, 35);
-    p1OLED.printf("1-Gold");
-    p1OLED.display();
-    p1OLED.setTextSize(2);
+    gameStartup();
 
-    p2OLED.clearDisplay();
-    p2OLED.setCursor(10, 5);
-    p2OLED.setTextSize(3);
-    p2OLED.printf("Player");
-    p2OLED.setCursor(10, 35);
-    p2OLED.printf("2-Blue");
-    p2OLED.display();
-    p2OLED.setTextSize(2);
+    position = myEnc.read();
 
-    pixel.begin();
-    pixel.setBrightness(30); 
-    pixel.setPixelColor(0, 0,255,0);
-    pixel.setPixelColor(1, 0,255,0);
-    pixel.show();
-    delay(3000);
-    pixel.clear();
-    pixel.show();
-
-    p1OLED.clearDisplay();
-    p1OLED.display();
-
-    p2OLED.clearDisplay();
-    p2OLED.display();
-
-    setHue(BULBS[0], false, HueGreen, 150, 255);   
-
-    
-    gameMode = WAITING;
 
     for (int i=0; i < 2; i++){
         pinMode(READYLEDPINS[i], OUTPUT);
@@ -156,7 +128,12 @@ void setup() {
 void loop() {
     currentMillis = millis();
 
-    if (autoModeSwitch.isPressed()){
+    if(autoModeSwitch.isClicked()){         //switch high is game mode
+        Serial.printf("switch flipped");
+        gameStartup();
+    }
+
+    if (autoModeSwitch.isPressed()){        //AUTO MODE (PLAYING GAME)
         switch (gameMode){
             case WAITING:
                 waitingForPlayers();
@@ -170,7 +147,33 @@ void loop() {
             case COUNTINGDOWN:
                 countDown();
         }
-    } else {
+    } else {                                //MANUAL CONTROL MODE
+        position = myEnc.read();
+
+        if(encoderButton.isClicked()){      
+            isSettingColor = !isSettingColor;
+        }
+
+        if (position > ENCODERMAX)    {    //Cap the encoder position at the encoder max
+            myEnc.write(ENCODERMAX);
+            position = ENCODERMAX;
+        }
+        else if (position < 0)    {       //Minimum encoder position is 0
+            myEnc.write(0);
+            position = 0;
+        }
+
+        if(isSettingColor){
+            hueManualColor = map(position, 0, ENCODERMAX, 0, 50000);
+        } else {
+            hueManualBrightness = map(position, 0, ENCODERMAX, 0, 255);
+        }
+
+        if((currentMillis - lastHueUpdate) > 500){
+            setHue(BULBS[0], true, hueManualColor, hueManualBrightness, 255);
+            lastHueUpdate = currentMillis;
+        }
+
         pixel.setPixelColor(0,0,255, 255);
         pixel.setPixelColor(1,0,255, 255);
     }
@@ -356,4 +359,59 @@ void showScore(){
     p1OLED.printf("Player 1: %i\nPlayer 2: %i", p1Score, p2Score);
     p1OLED.display();
     p2OLED.display();
+}
+
+void gameStartup(){
+    p1OLED.clearDisplay();
+    p1OLED.setTextColor(WHITE);
+    p1OLED.setTextSize(2);
+    p1OLED.display();
+
+    p2OLED.clearDisplay();
+    p2OLED.setTextColor(WHITE);
+    p2OLED.setTextSize(2);
+    p2OLED.display();
+
+    p1OLED.setCursor(0, 10);
+    p1OLED.printf("Slow\nMotion\nShowdown");
+    p1OLED.display();
+    p2OLED.display();       //This just displays the same as p1OLED. Using this to my advantage.
+    delay(3000);
+    
+    p1OLED.clearDisplay();
+    p1OLED.setCursor(10, 5);
+    p1OLED.setTextSize(3);
+    p1OLED.printf("Player");
+    p1OLED.setCursor(10, 35);
+    p1OLED.printf("1-Gold");
+    p1OLED.display();
+    p1OLED.setTextSize(2);
+
+    p2OLED.clearDisplay();
+    p2OLED.setCursor(10, 5);
+    p2OLED.setTextSize(3);
+    p2OLED.printf("Player");
+    p2OLED.setCursor(10, 35);
+    p2OLED.printf("2-Blue");
+    p2OLED.display();
+    p2OLED.setTextSize(2);
+
+    pixel.begin();
+    pixel.setBrightness(30); 
+    pixel.setPixelColor(0, 0,255,0);
+    pixel.setPixelColor(1, 0,255,0);
+    pixel.show();
+    delay(3000);
+    pixel.clear();
+    pixel.show();
+
+    p1OLED.clearDisplay();
+    p1OLED.display();
+
+    p2OLED.clearDisplay();
+    p2OLED.display();
+
+    setHue(BULBS[0], false, HueGreen, 150, 255);   
+
+    gameMode = WAITING;
 }
