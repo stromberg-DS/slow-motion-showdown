@@ -163,7 +163,7 @@ void loop() {
             p1OLED.setTextSize(2);
             // p1OLED.printf("Set hue &\n");
             // p1OLED.printf("intensity\nwith\nencoder.");
-            p1OLED.printf("Now adjusting\n");
+            p1OLED.printf("Now\nadjusting\n");
             p1OLED.printf("%s", hueOrBrightness.c_str());
             Serial.printf("Now adjusting: %s\n", hueOrBrightness.c_str());
             p1OLED.display();
@@ -278,7 +278,7 @@ void gameOn(){
         showScore();
         turnOnOffWemoSwitches(false);
         // wemoWrite(MYWEMO[0], LOW);
-        lightUpBulbs(true, HueBlue, 150);
+        lightUpBulbs(true, HueBlue, 200);
         // setHue(BULBS[0], true, HueBlue, 150, 255);        //turn bulb blue
         delay(2000);
         gameMode = WAITING;
@@ -304,7 +304,7 @@ void gameOn(){
         showScore();
         turnOnOffWemoSwitches(false);
         // wemoWrite(MYWEMO[0], LOW);
-        lightUpBulbs(true, HueYellow, 15);
+        lightUpBulbs(true, HueYellow, 200);
         // setHue(BULBS[0], true, HueYellow, 150, 255);        //turn bulb yellow
         delay(2000);
         gameMode = WAITING;
