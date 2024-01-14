@@ -24,7 +24,7 @@ const int AUTOMODEPIN = D17;                //Labeled S2, SCK on the Photon2
 const int READYLEDPINS[] = {D7, D6};
 const int PLAYERLEDS [] = {D19, D18};
 const int OLED_RESET = -1;
-const int PIXELCOUNT = 2;
+const int PIXELCOUNT = 15;
 const int WAITING = 0;
 const int PLAYING = 1;
 const int NOWINNER = 2;
@@ -32,10 +32,11 @@ const int WINNER = 3;
 const int COUNTINGDOWN = 4;
 const int ENCODERMAX = 80;
 
+
 //CHANGE BELOW CONSTANTS DEPENDING ON Setup
 const int numBulbsToUse = 1;    //1-6 bulbs
 const int numOutletsToUse = 1;  //1-5 outlets
-const bool isWifiOn = true;     //set to false and disable manual SYSTEM_MODE if no wifi
+const bool isWifiOn = false;     //set to false and disable manual SYSTEM_MODE if no wifi
 SYSTEM_MODE(MANUAL);
 // SYSTEM_MODE(SEMI_AUTOMATIC);    
 
@@ -81,6 +82,7 @@ void countDown();
 void gameStartup();
 void lightUpBulbs(bool _onOff, int _color, int _brightness);
 void turnOnOffWemoSwitches(bool _onOff);
+void lightLEDStrip( int _color, bool _onOff = true, int _count = PIXELCOUNT);
 
 void setup() {
     Serial.begin(9600);
@@ -116,6 +118,15 @@ void setup() {
 
     position = myEnc.read();
 
+    pixel.begin();
+    pixel.setBrightness(30); 
+    lightLEDStrip(0x00FFFF);
+    // pixel.setPixelColor(0, 0,255,0);
+    // pixel.setPixelColor(1, 0,255,0);
+    // pixel.show();
+    delay(3000);
+    pixel.clear();
+    pixel.show();
 
     for (int i=0; i < 2; i++){
         pinMode(READYLEDPINS[i], OUTPUT);
@@ -200,8 +211,9 @@ void loop() {
             lastHueUpdate = currentMillis;
         }
 
-        pixel.setPixelColor(0,0,255, 255);
-        pixel.setPixelColor(1,0,255, 255);
+        lightLEDStrip(0x0FFFF);
+        // pixel.setPixelColor(0,0,255, 255);
+        // pixel.setPixelColor(1,0,255, 255);
     }
 
     pixel.show();
@@ -212,9 +224,10 @@ void noWin(){
     if((currentMillis - noWinTimer) < 4000){
         showScore();
         if((currentMillis - noWinTimer) % 500 < 250){   //pulse red lights every 250ms
-            pixel.setPixelColor(0,255,0, 0);
-            pixel.setPixelColor(1,255,0, 0);
-            pixel.show();
+            lightLEDStrip(0xFF0000);
+            // pixel.setPixelColor(0,255,0, 0);
+            // pixel.setPixelColor(1,255,0, 0);
+            // pixel.show();
         } else{
             pixel.clear();
             pixel.show();
@@ -228,8 +241,10 @@ void noWin(){
 }
 
 void gameOn(){
-    pixel.setPixelColor(0,0,255,0);
-    pixel.setPixelColor(1, 0, 255, 0);
+
+    lightLEDStrip(0x00FF00);
+    // pixel.setPixelColor(0,0,255,0);
+    // pixel.setPixelColor(1, 0, 255, 0);
 
 
     digitalWrite(PLAYERLEDS[0], HIGH);
@@ -272,9 +287,10 @@ void gameOn(){
 
         p1Score = p1Score +5;
 
-        pixel.setPixelColor(0,0,0,255);
-        pixel.setPixelColor(1,0,0,255);
-        pixel.show();
+        lightLEDStrip(0x0000FF);
+        // pixel.setPixelColor(0,0,0,255);
+        // pixel.setPixelColor(1,0,0,255);
+        // pixel.show();
         showScore();
         turnOnOffWemoSwitches(false);
         // wemoWrite(MYWEMO[0], LOW);
@@ -298,9 +314,10 @@ void gameOn(){
 
         p2Score = p2Score +5;
 
-        pixel.setPixelColor(0,255,255,0);
-        pixel.setPixelColor(1,255,255,0);
-        pixel.show();
+        lightLEDStrip(0xFFFF00);
+        // pixel.setPixelColor(0,255,255,0);
+        // pixel.setPixelColor(1,255,255,0);
+        // pixel.show();
         showScore();
         turnOnOffWemoSwitches(false);
         // wemoWrite(MYWEMO[0], LOW);
@@ -325,8 +342,9 @@ void waitingForPlayers(){
     p1OLED.display();
     p2OLED.display();
 
-    pixel.setPixelColor(0,255,0,0);
-    pixel.setPixelColor(1, 255, 0, 0);
+    lightLEDStrip(0xFF0000);
+    // pixel.setPixelColor(0,255,0,0);
+    // pixel.setPixelColor(1, 255, 0, 0);
     
 
     if (readyButtonP1.isPressed() && readyButtonP2.isPressed()){
@@ -369,9 +387,10 @@ void countDown(){
             p2OLED.display();
         }
     } else {
-        pixel.setPixelColor(0, 0, 255, 0);
-        pixel.setPixelColor(1, 0, 255, 0);
-        pixel.show();
+        lightLEDStrip(0x00FF00);
+        // pixel.setPixelColor(0, 0, 255, 0);
+        // pixel.setPixelColor(1, 0, 255, 0);
+        // pixel.show();
         // lightUpBulbs(false, HueGreen, 150);
         turnOnOffWemoSwitches(true);
         // wemoWrite(MYWEMO[0], HIGH);
@@ -437,15 +456,6 @@ void gameStartup(){
     p2OLED.display();
     p2OLED.setTextSize(2);
 
-    pixel.begin();
-    pixel.setBrightness(30); 
-    pixel.setPixelColor(0, 0,255,0);
-    pixel.setPixelColor(1, 0,255,0);
-    pixel.show();
-    delay(3000);
-    pixel.clear();
-    pixel.show();
-
     p1OLED.clearDisplay();
     p1OLED.display();
 
@@ -461,6 +471,20 @@ void gameStartup(){
 void lightUpBulbs(bool _onOff, int _color, int _brightness){
     for(int i=0; i< numBulbsToUse; i++){
         setHue(BULBS[i], _onOff, _color, _brightness, 255);
+    }
+}
+
+void lightLEDStrip(int _color, bool _onOff, int _count){
+    if(_onOff){
+        for(int i=0; i<PIXELCOUNT; i++){
+            pixel.setPixelColor(i, _color);
+        }
+        pixel.show();
+    } else{
+        for(int i=0; i<PIXELCOUNT; i++){
+            pixel.clear();
+        }
+        pixel.show();
     }
 }
 
