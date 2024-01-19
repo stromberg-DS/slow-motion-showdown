@@ -235,9 +235,6 @@ void noWin(){
     if((currentMillis - noWinTimer) < 4000){
         if((currentMillis - noWinTimer) % 500 < 250){   //pulse red lights every 250ms
             lightLEDStrip(0xFF0000);
-            // pixel.setPixelColor(0,255,0, 0);
-            // pixel.setPixelColor(1,255,0, 0);
-            // pixel.show();
         }
         else{
             pixel.clear();
@@ -287,7 +284,7 @@ void gameOn(){
 
     //Meanwhile, wait for each player to press their own button
     if(player1Button.isClicked()){
-        lightLEDStrip(0x0000FF);
+        lightLEDStrip(0xFFDD00);
         p1OLED.clearDisplay();
         p1OLED.setCursor(0,0);
         p1OLED.setTextSize(4);
@@ -314,7 +311,7 @@ void gameOn(){
         
     }
     else if (player2Button.isClicked()) {
-        lightLEDStrip(0xFFFF00);
+        lightLEDStrip(0x0000FF);
         p1OLED.clearDisplay();
         p1OLED.setCursor(0,0);
         p1OLED.setTextSize(4);
