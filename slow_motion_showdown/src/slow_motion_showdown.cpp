@@ -1,5 +1,10 @@
 /* 
  * Project: Slow Motion Showdown
+ * Description: 2 Person game where each person tries to press their button first.
+ *              The catch is each person has a motion detector aimed at their button.
+ *              If they set off their motion detector, they end the round and give their opponent a point.
+ *              The game doubles as a smart controller, changing the lights of the
+ *              room when a player wins or loses.
  * Author: Daniel Stromberg
  * Date: 12/15/23 
 */
@@ -16,8 +21,8 @@ const int BULBS[] = {5, 3, 1, 2, 4, 6};     //bulb numbers - [0] is my testing b
 const int MYWEMO[] = {4, 5, 3, 2, 1};     //outlet numbers - [0] is my testing outlet
 const int READYBUTTONPINP1 = A2;
 const int READYBUTTONPINP2 = A5;
-const int P1BUTTONPIN = A0;
-const int P2BUTTONPIN = A1;
+const int P1BUTTONPIN = A1;
+const int P2BUTTONPIN = A0;
 const int P1MOTIONPIN = D10;
 const int P2MOTIONPIN = D3;
 const int AUTOMODEPIN = D17;                //Labeled S2, SCK on the Photon2
@@ -165,10 +170,12 @@ void loop() {
             case COUNTINGDOWN:
                 countDown();
         }
-    } else {                                //MANUAL CONTROL MODE
+    }
+    else {                                //MANUAL CONTROL MODE
         position = myEnc.read();
-
         if(isFirstManualRun){
+            digitalWrite(READYLEDPINS[0], LOW);
+            digitalWrite(READYLEDPINS[1], LOW);
             p1OLED.clearDisplay();
             p1OLED.setCursor(0,0);
             p1OLED.setTextSize(2);
@@ -182,6 +189,8 @@ void loop() {
 
             isFirstManualRun = false;
         }
+
+
 
         if(encoderButton.isClicked()){      
             isSettingColor = !isSettingColor;
@@ -200,7 +209,8 @@ void loop() {
         if(isSettingColor){
             hueManualColor = map(position, 0, ENCODERMAX, 0, 50000);
             hueOrBrightness = "hue";
-        } else {
+        }
+        else {
             hueManualBrightness = map(position, 0, ENCODERMAX, 0, 255);
             hueOrBrightness = "intensity";
         }
@@ -211,7 +221,7 @@ void loop() {
             lastHueUpdate = currentMillis;
         }
 
-        lightLEDStrip(0x0FFFF);
+        lightLEDStrip(0x00FFFF);
         // pixel.setPixelColor(0,0,255, 255);
         // pixel.setPixelColor(1,0,255, 255);
     }
@@ -220,33 +230,35 @@ void loop() {
 
 }
 
+//  Blinks LEDs red when someone loses
 void noWin(){   
     if((currentMillis - noWinTimer) < 4000){
-        showScore();
         if((currentMillis - noWinTimer) % 500 < 250){   //pulse red lights every 250ms
             lightLEDStrip(0xFF0000);
             // pixel.setPixelColor(0,255,0, 0);
             // pixel.setPixelColor(1,255,0, 0);
             // pixel.show();
-        } else{
+        }
+        else{
             pixel.clear();
             pixel.show();
         }
 
-    } else{
+    }
+    else{
+        showScore();
         lightUpBulbs(false, 0, 0);
         // setHue(BULBS[0], false, 0, 0, 0);        //turn off bulb
         gameMode = WAITING;
     }
 }
 
+//  Start the round where each player tries to press their button
 void gameOn(){
 
     lightLEDStrip(0x00FF00);
     // pixel.setPixelColor(0,0,255,0);
     // pixel.setPixelColor(1, 0, 255, 0);
-
-
     digitalWrite(PLAYERLEDS[0], HIGH);
     digitalWrite(PLAYERLEDS[1], HIGH);
 
@@ -262,7 +274,6 @@ void gameOn(){
         noWinTimer = currentMillis;
         gameMode = NOWINNER;
     }
-
     if (p2Motion.isClicked()){
         Serial.printf("P2 LOSER");
         p1Score++;
@@ -276,10 +287,11 @@ void gameOn(){
 
     //Meanwhile, wait for each player to press their own button
     if(player1Button.isClicked()){
+        lightLEDStrip(0x0000FF);
         p1OLED.clearDisplay();
         p1OLED.setCursor(0,0);
         p1OLED.setTextSize(4);
-        p1OLED.printf("BLUE\nWINS!");
+        p1OLED.printf("GOLD\nWINS!");
         p1OLED.display();
         p2OLED.display();
         p1OLED.setTextSize(2);
@@ -287,7 +299,6 @@ void gameOn(){
 
         p1Score = p1Score +5;
 
-        lightLEDStrip(0x0000FF);
         // pixel.setPixelColor(0,0,0,255);
         // pixel.setPixelColor(1,0,0,255);
         // pixel.show();
@@ -303,18 +314,17 @@ void gameOn(){
         
     }
     else if (player2Button.isClicked()) {
+        lightLEDStrip(0xFFFF00);
         p1OLED.clearDisplay();
         p1OLED.setCursor(0,0);
         p1OLED.setTextSize(4);
-        p1OLED.printf("GOLD\nWINS!");
+        p1OLED.printf("BLUE\nWINS!");
         p1OLED.display();
         p2OLED.display();
         p1OLED.setTextSize(2);
         delay(1000);
 
         p2Score = p2Score +5;
-
-        lightLEDStrip(0xFFFF00);
         // pixel.setPixelColor(0,255,255,0);
         // pixel.setPixelColor(1,255,255,0);
         // pixel.show();
@@ -331,6 +341,7 @@ void gameOn(){
 
 }
 
+//  Wait for players to press ready buttons while instructing them to do so.
 void waitingForPlayers(){
     turnOnOffReadyLEDs(true);
     digitalWrite(PLAYERLEDS[0], LOW);
@@ -358,6 +369,7 @@ void waitingForPlayers(){
     pixel.show();
 }
 
+//  Give both players a countdown to the start of the round.
 void countDown(){
     if((currentMillis - countdownStart) < 5000){
         if((currentMillis - countdownStart) < 2000){
@@ -366,27 +378,31 @@ void countDown(){
             p1OLED.printf("Get ready\nto start\nin...");
             p1OLED.display();
             p2OLED.display();
-        } else if((currentMillis - countdownStart) < 3000){
+        }
+        else if((currentMillis - countdownStart) < 3000){
             p1OLED.clearDisplay();
             p1OLED.setCursor(40,0);
             p1OLED.setTextSize(9);
             p1OLED.printf("3");
             p1OLED.display();
             p2OLED.display();
-        } else if((currentMillis - countdownStart) < 4000){
+        }
+        else if((currentMillis - countdownStart) < 4000){
             p1OLED.clearDisplay();
             p1OLED.setCursor(40,0);
             p1OLED.printf("2");
             p1OLED.display();
             p2OLED.display();
-        } else{
+        }
+        else{
             p1OLED.clearDisplay();
             p1OLED.setCursor(40,0);
             p1OLED.printf("1");
             p1OLED.display();
             p2OLED.display();
         }
-    } else {
+    }
+    else {
         lightLEDStrip(0x00FF00);
         // pixel.setPixelColor(0, 0, 255, 0);
         // pixel.setPixelColor(1, 0, 255, 0);
@@ -405,23 +421,31 @@ void countDown(){
 
 }
 
+//Turn on or off all of the ready button LEDs
 void turnOnOffReadyLEDs(bool onOff){
     for (int i=0; i < 2; i++){
         digitalWrite(READYLEDPINS[i], onOff);
     }
 }
 
+//  Display the scores of the 2 players.
 void showScore(){
     p1OLED.setTextSize(2);
     p2OLED.setTextSize(2);
     p1OLED.clearDisplay();
     p1OLED.setCursor(0,0);
-    p1OLED.printf("Player 1: %i\nPlayer 2: %i", p1Score, p2Score);
+    p1OLED.printf("Gold: %i\nBlue: %i", p1Score, p2Score);
     p1OLED.display();
     p2OLED.display();
+    delay(2000);
 }
 
+
+//  Setup the game, displaying relevant info on OLED screens
 void gameStartup(){
+    p1Score = 0;
+    p2Score = 0;
+
     p1OLED.clearDisplay();
     p1OLED.setTextColor(WHITE);
     p1OLED.setTextSize(2);
@@ -456,6 +480,8 @@ void gameStartup(){
     p2OLED.display();
     p2OLED.setTextSize(2);
 
+    delay(3000);
+
     p1OLED.clearDisplay();
     p1OLED.display();
 
@@ -468,19 +494,24 @@ void gameStartup(){
     gameMode = WAITING;
 }
 
+//  Turn on or off up all of the Bulbs in the array.
+//  Makes it easy to switch between 1 or many bulbs.
 void lightUpBulbs(bool _onOff, int _color, int _brightness){
     for(int i=0; i< numBulbsToUse; i++){
         setHue(BULBS[i], _onOff, _color, _brightness, 255);
     }
 }
 
+//  Lights up LED strips in the array, using the color and,
+//  optionally, the on/off state and number of LEDs to light.
 void lightLEDStrip(int _color, bool _onOff, int _count){
     if(_onOff){
         for(int i=0; i<PIXELCOUNT; i++){
             pixel.setPixelColor(i, _color);
         }
         pixel.show();
-    } else{
+    }
+    else{
         for(int i=0; i<PIXELCOUNT; i++){
             pixel.clear();
         }
@@ -488,6 +519,7 @@ void lightLEDStrip(int _color, bool _onOff, int _count){
     }
 }
 
+//Turns on or off all of the wemo switches in the array.
 void turnOnOffWemoSwitches(bool _onOff){
     for(int i=0; i < numOutletsToUse; i++){
         wemoWrite(MYWEMO[i], _onOff);
