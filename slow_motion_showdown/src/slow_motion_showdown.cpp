@@ -42,6 +42,7 @@ const int ENCODERMAX = 80;
 const int numBulbsToUse = 1;    //1-6 bulbs
 const int numOutletsToUse = 2;  //1-5 outlets
 const bool isWifiOn = true;     //set to false and disable manual SYSTEM_MODE if no wifi
+const bool USEHUEBULBS = false;
 SYSTEM_MODE(MANUAL);
 // SYSTEM_MODE(SEMI_AUTOMATIC);    
 
@@ -494,8 +495,10 @@ void gameStartup(){
 //  Turn on or off up all of the Bulbs in the array.
 //  Makes it easy to switch between 1 or many bulbs.
 void lightUpBulbs(bool _onOff, int _color, int _brightness){
-    for(int i=0; i< numBulbsToUse; i++){
-        setHue(BULBS[i], _onOff, _color, _brightness, 255);
+    if (USEHUEBULBS){
+        for(int i=0; i< numBulbsToUse; i++){
+            setHue(BULBS[i], _onOff, _color, _brightness, 255);
+        }
     }
 }
 
