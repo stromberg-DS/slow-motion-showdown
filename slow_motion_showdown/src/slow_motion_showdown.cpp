@@ -18,7 +18,7 @@
 
 
 const int BULBS[] = {5, 3, 1, 2, 4, 6};     //bulb numbers - [0] is my testing bulb
-const int MYWEMO[] = {4, 5, 3, 2, 1};     //outlet numbers - [0] is my testing outlet
+const int MYWEMO[] = {4, 2, 3, 5, 1};     //outlet numbers - [0] is my testing outlet
 const int READYBUTTONPINP1 = A2;
 const int READYBUTTONPINP2 = A5;
 const int P1BUTTONPIN = A1;
@@ -40,8 +40,8 @@ const int ENCODERMAX = 80;
 
 //CHANGE BELOW CONSTANTS DEPENDING ON Setup
 const int numBulbsToUse = 1;    //1-6 bulbs
-const int numOutletsToUse = 1;  //1-5 outlets
-const bool isWifiOn = false;     //set to false and disable manual SYSTEM_MODE if no wifi
+const int numOutletsToUse = 2;  //1-5 outlets
+const bool isWifiOn = true;     //set to false and disable manual SYSTEM_MODE if no wifi
 SYSTEM_MODE(MANUAL);
 // SYSTEM_MODE(SEMI_AUTOMATIC);    
 
@@ -302,7 +302,7 @@ void gameOn(){
         showScore();
         turnOnOffWemoSwitches(false);
         // wemoWrite(MYWEMO[0], LOW);
-        lightUpBulbs(true, HueBlue, 200);
+        lightUpBulbs(true, HueYellow, 200);
         // setHue(BULBS[0], true, HueBlue, 150, 255);        //turn bulb blue
         delay(2000);
         gameMode = WAITING;
@@ -328,7 +328,7 @@ void gameOn(){
         showScore();
         turnOnOffWemoSwitches(false);
         // wemoWrite(MYWEMO[0], LOW);
-        lightUpBulbs(true, HueYellow, 200);
+        lightUpBulbs(true, HueBlue, 200);
         // setHue(BULBS[0], true, HueYellow, 150, 255);        //turn bulb yellow
         delay(2000);
         gameMode = WAITING;
