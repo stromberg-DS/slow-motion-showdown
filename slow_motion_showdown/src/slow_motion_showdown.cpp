@@ -36,15 +36,16 @@ const int NOWINNER = 2;
 const int WINNER = 3;
 const int COUNTINGDOWN = 4;
 const int ENCODERMAX = 80;
+const int SPEAKERSWITCHPIN = D8;
 
 
 //CHANGE BELOW CONSTANTS DEPENDING ON Setup
 const int numBulbsToUse = 1;    //1-6 bulbs
 const int numOutletsToUse = 2;  //1-5 outlets
-const bool isWifiOn = true;     //set to false and disable manual SYSTEM_MODE if no wifi
+const bool isWifiOn = false;     //set to false and disable manual SYSTEM_MODE if no wifi
 const bool USEHUEBULBS = false;
-SYSTEM_MODE(MANUAL);
-// SYSTEM_MODE(SEMI_AUTOMATIC);    
+// SYSTEM_MODE(MANUAL);
+SYSTEM_MODE(SEMI_AUTOMATIC);    
 
 SYSTEM_THREAD(ENABLED);
 
@@ -69,6 +70,8 @@ int p1Score = 0;
 int p2Score = 0;
 int noWinTimer = 0;
 int countdownStart = 0;
+int loser = 0;
+
 
 //Maual Mode variables
 int position;
@@ -141,6 +144,8 @@ void setup() {
 
     pinMode(PLAYERLEDS[0], OUTPUT);
     pinMode(PLAYERLEDS[1], OUTPUT);
+    pinMode(SPEAKERSWITCHPIN, OUTPUT);
+    digitalWrite(SPEAKERSWITCHPIN, LOW);
     digitalWrite(PLAYERLEDS[0], LOW);
     digitalWrite(PLAYERLEDS[1], LOW);
 
@@ -234,6 +239,21 @@ void loop() {
 //  Blinks LEDs red when someone loses
 void noWin(){   
     if((currentMillis - noWinTimer) < 4000){
+        p1OLED.clearDisplay();
+        p1OLED.setCursor(0,0);
+        p1OLED.setTextSize(4);
+        if(loser ==1){
+            p1OLED.printf("GOLD\nLOST");
+        } else if(loser == 2){
+            p1OLED.printf("BLUE\nLOST");
+        }
+        else{
+            p1OLED.printf("ERROR");
+        }
+        p1OLED.display();
+        p2OLED.display();
+        p1OLED.setTextSize(2);
+        
         if((currentMillis - noWinTimer) % 500 < 250){   //pulse red lights every 250ms
             lightLEDStrip(0xFF0000);
         }
@@ -244,6 +264,7 @@ void noWin(){
 
     }
     else{
+        loser = 0;
         showScore();
         lightUpBulbs(false, 0, 0);
         // setHue(BULBS[0], false, 0, 0, 0);        //turn off bulb
@@ -264,6 +285,7 @@ void gameOn(){
     //End the game if either player triggers their motion sensor.
     if (p1Motion.isClicked()){          
         Serial.printf("P1 LOSER\n");
+        loser = 1;
         p2Score++;
         turnOnOffWemoSwitches(false);
         // wemoWrite(MYWEMO[0], LOW);
@@ -273,6 +295,7 @@ void gameOn(){
         gameMode = NOWINNER;
     }
     if (p2Motion.isClicked()){
+        loser = 2;
         Serial.printf("P2 LOSER");
         p1Score++;
         turnOnOffWemoSwitches(false);
@@ -524,4 +547,5 @@ void turnOnOffWemoSwitches(bool _onOff){
     for(int i=0; i < numOutletsToUse; i++){
         wemoWrite(MYWEMO[i], _onOff);
     }
+    digitalWrite(SPEAKERSWITCHPIN, _onOff);
 }
